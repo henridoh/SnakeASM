@@ -1,9 +1,13 @@
+fieldwidth  equ 30
+fieldheight equ 20
+startlen    equ 3
+
+
+
 ICANON	equ 2
 ECHO	equ 8
 
 section .rodata
-  fieldwidth  equ 30
-  fieldheight equ 20
   fieldsize   equ fieldwidth * fieldheight
 
 
@@ -38,7 +42,7 @@ section .data
   movy	      dw 0
   hasmoved    db 0
 
-  snakelen    dw 3
+  snakelen    dw startlen
 
   applepos    dw 0
 
@@ -86,7 +90,7 @@ exit:
   call print
   xor rax, rax
   mov ax, [snakelen]
-  sub rax, 3
+  sub rax, startlen
   call print.number
   mov rsi, newline
   call print
@@ -236,7 +240,7 @@ update:
     call print
     xor rax, rax
     mov ax, [snakelen]
-    sub ax, 3
+    sub ax, startlen
     call print.number
     mov rsi, newline
     call print
@@ -342,45 +346,45 @@ strcmp:
 
 
 poll:
-  nop
-	mov qword[buffer], 0
-        push rbx
-        push rcx
-        push rdx
-        push rdi
-        push rsi
-        mov rax, 7; the number of the poll system call
-        mov rdi, fd; pointer to structure
-        mov rsi, 1; monitor one thread
-        mov rdx, 0; do not give time to wait
-        syscall
-        test rax, rax; check the returned value to 0
-        jz .e
-        mov rax, 0
-        mov rdi, 0; if there is data
-        mov rsi, buffer; then make the call read
-        mov rdx, 3
-        syscall
-        xor rax, rax
-        mov al, byte [buffer]; return the character code if it was read
-    .e: pop rsi
-        pop rdi
-        pop rdx
-        pop rcx
-        pop rbx
-        ret
+  mov qword[buffer], 0
+  push rbx
+  push rcx
+  push rdx
+  push rdi
+  push rsi
+  mov rax, 7; the number of the poll system call
+  mov rdi, fd; pointer to structure
+  mov rsi, 1; monitor one thread
+  mov rdx, 0; do not give time to wait
+  syscall
+  test rax, rax; check the returned value to 0
+  jz .e
+  mov rax, 0
+  mov rdi, 0; if there is data
+  mov rsi, buffer; then make the call read
+  mov rdx, 3
+  syscall
+  xor rax, rax
+  mov al, byte [buffer]; return the character code if it was read
+  .e:
+    pop rsi
+    pop rdi
+    pop rdx
+    pop rcx
+    pop rbx
+    ret
 
 
 setnoncan:
-        push stty
-        call tcgetattr
-        push tty
-        call tcgetattr
-        and dword[lflag], (~ ICANON)
-        and dword[lflag], (~ ECHO)
-        call tcsetattr
-        add rsp, 16
-        ret
+  push stty
+  call tcgetattr
+  push tty
+  call tcgetattr
+  and dword[lflag], (~ ICANON)
+  and dword[lflag], (~ ECHO)
+  call tcsetattr
+  add rsp, 16
+  ret
 
 setcan:
         push stty
@@ -389,37 +393,37 @@ setcan:
         ret
 
 tcgetattr:
-        mov rdx, qword [rsp+8]
-        push rax
-        push rbx
-        push rcx
-        push rdi
-        push rsi
-        mov rax, 16; ioctl system call
-        mov rdi, 0
-        mov rsi, 21505
-        syscall
-        pop rsi
-        pop rdi
-        pop rcx
-        pop rbx
-        pop rax
-        ret
+  mov rdx, qword [rsp+8]
+  push rax
+  push rbx
+  push rcx
+  push rdi
+  push rsi
+  mov rax, 16; ioctl system call
+  mov rdi, 0
+  mov rsi, 21505
+  syscall
+  pop rsi
+  pop rdi
+  pop rcx
+  pop rbx
+  pop rax
+  ret
 
 tcsetattr:
-        mov rdx, qword [rsp+8]
-        push rax
-        push rbx
-        push rcx
-        push rdi
-        push rsi
-        mov rax, 16; ioctl system call
-        mov rdi, 0
-        mov rsi, 21506
-        syscall
-        pop rsi
-        pop rdi
-        pop rcx
-        pop rbx
-        pop rax
-        ret
+  mov rdx, qword [rsp+8]
+  push rax
+  push rbx
+  push rcx
+  push rdi
+  push rsi
+  mov rax, 16; ioctl system call
+  mov rdi, 0
+  mov rsi, 21506
+  syscall
+  pop rsi
+  pop rdi
+  pop rcx
+  pop rbx
+  pop rax
+  ret
