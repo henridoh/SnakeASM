@@ -17,23 +17,28 @@ section .rodata
 
   clearscreen db 27, '[0m', 27, '[2J', 27, '[0;0f', 0
 
-  endofline   db 27, '[37;30m', '|', 10, 27, '[u', 27, '[1B', 0
-  startofline db 27, '[37;30m', 27, '[s', '|', 0
+  endofline   db 27, '[0m', '║', 10, 27, '[u', 27, '[1B', 0
+  startofline db 27, '[0m', 27, '[s', '║', 0
+  top				db '╔'
+						times (fieldwidth-4) db '═'
+					  db 27, '[32m', 'SnakeASM', 27, '[0m'
+						times (fieldwidth-4) db '═'
+    	      db '╗', 10, 0
+  
+  bottom    db '╚'
+    	      times (fieldwidth*2) db '═'
+    	      db '╝', 0
 
-  testmessage db 'Hello World!', 10, 0
 
-  lenmessage  db 27, '[0m', 'Score: ', 0
+  lenmessage  db 10, 27, '[0m', 'Score: ', 0
   newline     db 27, '[0m', 10, 0
 
-  gameover    db 'Game Over!', 10, 0
+  gameover    db 'Game Over!', 0
 
-  up	      db 27, '[A', 0
+  up		      db 27, '[A', 0
   down	      db 27, '[B', 0
   left	      db 27, '[C', 0
   right	      db 27, '[D', 0
-
-  s1 db "asdf", 10, 0
-  s2 db "asdf", 10, 0
 
 section .data
   snakeposx   dw 3
@@ -48,7 +53,7 @@ section .data
 
   sleeptime:
     .s dq 0
-    .n dq 150000000
+    .n dq 125000000
 
   fd  dd 0
   eve dw 1
@@ -61,9 +66,11 @@ section .bss
   stty	  resb 12
   slflag  resb 4
   srest	  resb 44
-  tty	  resb 12
+  tty			resb 12
   lflag	  resb 4
   brest	  resb 44
+
+  isgameover  resb 0
 
   field	    resw fieldsize
 
@@ -72,6 +79,18 @@ section .text
   global _start
 
 _start:
+  rdtsc
+  xor rdx, rdx
+  mov rbx, fieldwidth
+  div rbx
+  mov word[snakeposx], dx
+  rdtsc
+  xor rdx, rdx
+  mov rbx, fieldheight
+  div rbx
+  mov word[snakeposy], dx
+
+
   call setnoncan
   call newapplepos
   mainloop:
@@ -101,13 +120,19 @@ exit:
 
 update:
   cmp word[snakeposx], fieldwidth   ; check if snake is dead
-  je exit
+  je .dead
   cmp word[snakeposx], -1
-  je exit
+  je .dead
   cmp word[snakeposy], fieldheight
-  je exit
+  je .dead
   cmp word[snakeposy], -1
-  je exit
+  je .dead
+
+  jmp .noexit
+  .dead:
+  mov byte[isgameover], 2
+
+  .noexit:
 
   call poll		; exit when 'q' is pressed
   cmp al, 'q'
@@ -162,6 +187,9 @@ update:
   mov rsi, clearscreen	; clear screen
   call print
 
+  mov rsi, top
+  call print
+
   xor r11, r11
 
   mov ax, [snakeposy]	; calc snake pos
@@ -172,7 +200,6 @@ update:
   cmp r11w, [applepos]
   jne .noappleeaten
   inc word[snakelen]
-
   call newapplepos
   .noappleeaten:
 
@@ -195,10 +222,11 @@ update:
 
     cmp r8w, r11w	  ; if snake head on current position
     jne .nohead
-    cmp word[r10], 0	  ; if snake has eaten himself
+    cmp word[r10], 0  	  ; if snake has eaten himself
     je .hneh
-    cmp byte[hasmoved], 1 ; and has moved aleready
-    je exit		  ; then exit
+    cmp byte[hasmoved], 1   ; and has moved aleready
+    jne .hneh
+    mov byte[isgameover], 1 ; then exit
 
     .hneh:
     mov ax, [snakelen]
@@ -236,6 +264,12 @@ update:
   
 
   .end:			  ; print score
+    mov rsi, bottom
+    call print
+
+    cmp byte[isgameover], 0
+    jne exit
+
     mov rsi, lenmessage
     call print
     xor rax, rax
@@ -287,8 +321,6 @@ print:
     mov byte[rsi], 0
 
     .nloop:
-      cmp rax, 0
-      je .nout
       dec rsi
       
       xor rdx, rdx
@@ -296,7 +328,8 @@ print:
       div rbx
       xor dl, 48
       mov [rsi], dl
-      jmp .nloop
+      cmp rax, 0
+			jne .nloop
     .nout:
       call print
       ret
@@ -307,8 +340,15 @@ newapplepos:
   xor rdx, rdx
   mov rbx, fieldsize
   div rbx
-  mov [applepos], dx
-  ret
+  mov r12, field
+  add r12, rdx
+  add r12, rdx
+  cmp word[r12], 0
+  jne newapplepos
+
+  .eq:
+    mov word[applepos], dx
+    ret
 
 strcmp:
   push rax
