@@ -60,6 +60,11 @@ section .data
   rev dw 0
   sym db 1
 
+	screenbuffer:
+		.buffer times (2264) db 0
+		.end		db 0
+		.pos		dw 0
+
 section .bss
   buffer    resb 128
 
@@ -79,7 +84,7 @@ section .text
   global _start
 
 _start:
-  rdtsc
+	rdtsc
   xor rdx, rdx
   mov rbx, fieldwidth
   div rbx
@@ -102,17 +107,18 @@ _start:
 exit:
   call setcan
   mov rsi, newline
-  call print
+  call print.buffer
   mov rsi, gameover
-  call print
+  call print.buffer
   mov rsi, lenmessage
-  call print
+  call print.buffer
   xor rax, rax
   mov ax, [snakelen]
   sub rax, startlen
-  call print.number
+  call print.numberbuf
   mov rsi, newline
-  call print
+	call print.buffer
+  call print.flush
 
   mov rax, 60
   mov rdi, 0
@@ -185,10 +191,10 @@ update:
   add [snakeposy], r11w
 
   mov rsi, clearscreen	; clear screen
-  call print
+  call print.buffer
 
   mov rsi, top
-  call print
+  call print.buffer
 
   xor r11, r11
 
@@ -210,7 +216,7 @@ update:
     cmp r9, 0		  ; if start of line
     jne .nostartline
     mov rsi, startofline  ; print '|'
-    call print
+    call print.buffer
     .nostartline:
 
 
@@ -237,24 +243,24 @@ update:
     je .nosnake
     dec word[r10]	  ; then print snake symbol (*) and decrease lifespan
     mov rsi, snakesymbol
-    call print
+    call print.buffer
     jmp .snake
     .nosnake:		  ; else
     cmp r8w, [applepos]	  ; if apple on current position
     jne .noapple
     mov rsi, applesymbol  ; then print apple symbol
-    call print
+    call print.buffer
     jmp .snake
     .noapple:
     mov rsi, clearsymbol  ; else print whitespace
-    call print
+    call print.buffer
     .snake:
     add r10, 2		  ; inc r10 to next word // next cell
 
     cmp r9, fieldwidth-1  ; if end of line reached
     jne .noendline
     mov rsi, endofline	  ; then print '|\n'
-    call print
+    call print.buffer
     mov r9, -1
 
     .noendline:
@@ -265,25 +271,27 @@ update:
 
   .end:			  ; print score
     mov rsi, bottom
-    call print
+    call print.buffer
 
     cmp byte[isgameover], 0
     jne exit
 
     mov rsi, lenmessage
-    call print
+    call print.buffer
     xor rax, rax
     mov ax, [snakelen]
     sub ax, startlen
-    call print.number
+    call print.numberbuf
     mov rsi, newline
-    call print
+    call print.buffer
+		call print.flush
     ret
 
 sleep:			  ; sleep $sleeptime
   mov rax, 35
   mov rdi, sleeptime
   mov rsi, 0
+	mov rdx, 0
   syscall
   ret
 
@@ -315,7 +323,47 @@ print:
     pop rax
   ret
 
-  .number:
+	.buffer:
+		push r9
+		push r10
+		push r11
+		push rsi
+
+		xor r9, r9
+
+		mov r11, screenbuffer
+		xor r10, r10
+		mov r10w, word[screenbuffer.pos]
+		add r11, r10
+		.bloop:
+			cmp byte[rsi], 0
+			je .bend
+
+			mov r9b, byte[rsi]
+			mov byte[r11], r9b
+			inc r11
+			inc word[screenbuffer.pos]
+			inc rsi
+			jmp .bloop
+
+		.bend:
+			mov word[r11], 0
+
+			pop rsi
+			pop r11
+			pop r10
+			pop r9
+			ret
+
+	.flush:
+		mov rsi, screenbuffer
+		call print
+		xor rax, rax
+		mov ax, word[screenbuffer.pos]
+		mov word[screenbuffer.pos], 0
+		ret
+	
+	.numberbuf:
     mov rsi, buffer
     add rsi, 128
     mov byte[rsi], 0
@@ -331,7 +379,7 @@ print:
       cmp rax, 0
 			jne .nloop
     .nout:
-      call print
+      call print.buffer
       ret
 
 
