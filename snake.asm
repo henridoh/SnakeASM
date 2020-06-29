@@ -61,7 +61,7 @@ section .data
   sym db 1
 
 	screenbuffer:
-		.buffer times (2264) db 0
+		.buffer times (fieldsize * 5) db 0
 		.end		db 0
 		.pos		dw 0
 
