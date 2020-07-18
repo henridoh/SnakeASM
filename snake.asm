@@ -75,7 +75,7 @@ section .bss
   lflag	  resb 4
   brest	  resb 44
 
-  isgameover  resb 0
+  isgameover  resb 1
 
   field	    resw fieldsize
 
