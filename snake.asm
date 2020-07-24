@@ -46,6 +46,8 @@ section .data
   movx	      dw 0
   movy	      dw 0
   hasmoved    db 0
+  
+  isgameover  db 0
 
   snakelen    dw startlen
 
@@ -74,8 +76,6 @@ section .bss
   tty			resb 12
   lflag	  resb 4
   brest	  resb 44
-
-  isgameover  resb 1
 
   field	    resw fieldsize
 
