@@ -3,7 +3,6 @@ fieldheight equ 20
 startlen    equ 3
 
 
-
 ICANON	equ 2
 ECHO	equ 8
 
@@ -117,7 +116,7 @@ exit:
   sub rax, startlen
   call print.numberbuf
   mov rsi, newline
-	call print.buffer
+  call print.buffer
   call print.flush
 
   mov rax, 60
