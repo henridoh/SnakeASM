@@ -227,32 +227,34 @@ update:
 
     cmp r8w, r11w	  ; if snake head on current position
     jne .nohead
-    cmp word[r10], 0  	  ; if snake has eaten himself
-    je .hneh
-    cmp byte[hasmoved], 1   ; and has moved aleready
-    jne .hneh
-    mov byte[isgameover], 1 ; then exit
+      cmp word[r10], 0  	  ; if snake has eaten itself
+      je .hneh
+  
+      cmp byte[hasmoved], 1   ; and has moved aleready
+      sete byte[isgameover]   ; set game over
 
-    .hneh:
+    .hneh:    ; put snake body on head position
     mov ax, [snakelen]
     mov word[r10], ax
 
     .nohead:
     cmp word[r10], 0	  ; if snake body on current position
     je .nosnake
-    dec word[r10]	  ; then print snake symbol (*) and decrease lifespan
-    mov rsi, snakesymbol
-    call print.buffer
+      dec word[r10]	  ; then print snake symbol (*) and decrease lifespan
+      mov rsi, snakesymbol
+      call print.buffer
     jmp .snake
     .nosnake:		  ; else
-    cmp r8w, [applepos]	  ; if apple on current position
-    jne .noapple
-    mov rsi, applesymbol  ; then print apple symbol
-    call print.buffer
+      cmp r8w, [applepos]	  ; if apple on current position
+      jne .noapple
+      mov rsi, applesymbol  ; then print apple symbol
+      call print.buffer
     jmp .snake
+
     .noapple:
     mov rsi, clearsymbol  ; else print whitespace
     call print.buffer
+
     .snake:
     add r10, 2		  ; inc r10 to next word // next cell
 
@@ -272,10 +274,10 @@ update:
     mov rsi, bottom
     call print.buffer
 
-    cmp byte[isgameover], 0
-    jne exit
+    cmp byte[isgameover], 0   ; if game over is set
+    jne exit                  ; go to exit
 
-    mov rsi, lenmessage
+    mov rsi, lenmessage       ; print length
     call print.buffer
     xor rax, rax
     mov ax, [snakelen]
@@ -283,7 +285,7 @@ update:
     call print.numberbuf
     mov rsi, newline
     call print.buffer
-		call print.flush
+		call print.flush          ; flush print buffer
     ret
 
 sleep:			  ; sleep $sleeptime
